@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!-- Stat card template: a big number that counts from FROM to TO, a row of segment pills that drop in,
+     and a caption line. Edit the CONFIG block (or let Claude fill it). Time-driven via window.renderAt(t). -->
+<html><head><meta charset="utf-8">
+<style>
+  :root{
+    --bg:#F6F6F4; --card:#FFFFFF; --ink:#151515; --muted:#7A7A7A; --accent:#C9785A; --rule:#E2E2DE;
+    --display:"Inter","Helvetica Neue",Arial,sans-serif; --body:"Inter","Helvetica Neue",Arial,sans-serif;
+  }
+  html,body{margin:0;width:1920px;height:1080px;background:var(--bg);overflow:hidden;font-family:var(--body)}
+  .card{position:absolute;left:50%;top:50%;width:1180px;height:660px;margin:-330px 0 0 -590px;background:var(--card);
+        border-radius:28px;box-shadow:0 30px 80px rgba(0,0,0,.10);display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .label{letter-spacing:.32em;font-size:22px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+  .big{font-family:var(--display);font-weight:600;font-size:260px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+  .rail{position:relative;width:900px;height:22px;margin-top:40px;border-top:2px solid var(--rule)}
+  .pill{position:absolute;top:-12px;width:42px;height:22px;border-radius:6px;background:var(--accent)}
+  .sub{margin-top:44px;font-size:28px;color:var(--muted)} .sub b{color:var(--ink)}
+</style></head>
+<body>
+<div class="card" id="card">
+  <div class="label" id="label"></div>
+  <div class="big" id="big"></div>
+  <div class="rail" id="rail"></div>
+  <div class="sub" id="sub"></div>
+</div>
+<script>
+// ---------- CONFIG ----------
+const CONFIG = {
+  label: "Rough cut",
+  from: "17:48", to: "3:54",        // mm:ss values; numbers like 100 → 3 also work
+  pills: 13,                          // segments shown on the rail
+  sub: "<b>53</b> pieces kept · <b>99.1%</b> of words present",
+  countStart: 0.5, countEnd: 2.6,     // seconds
+};
+// ----------------------------
+const $ = id => document.getElementById(id);
+$("label").textContent = CONFIG.label; $("sub").innerHTML = CONFIG.sub;
+const toS = v => String(v).includes(":") ? v.split(":").reduce((a, b) => a * 60 + +b, 0) : +v;
+const fmt = (s, like) => String(like).includes(":") ? `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}` : Math.round(s).toString();
+const ease = x => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+for (let i = 0; i < CONFIG.pills; i++) { const p = document.createElement("div"); p.className = "pill"; $("rail").appendChild(p); }
+const pills = [...document.querySelectorAll(".pill")];
+
+window.renderAt = (t) => {
+  const card = $("card"), k = ease(t / 0.45);
+  card.style.opacity = k; card.style.transform = `translateY(${(1 - k) * 40}px) scale(${0.97 + 0.03 * k + t * 0.004})`; // slow push so nothing freezes
+  const c = ease((t - CONFIG.countStart) / (CONFIG.countEnd - CONFIG.countStart));
+  const v = toS(CONFIG.from) + (toS(CONFIG.to) - toS(CONFIG.from)) * c;
+  $("big").textContent = fmt(v, CONFIG.from);
+  pills.forEach((p, i) => {
+    const pk = ease((t - CONFIG.countStart - i * 0.09) / 0.35);
+    const x = (900 / CONFIG.pills) * i + (1 - c) * i * 18;   // pills close up as the cut tightens
+    p.style.left = x + "px"; p.style.opacity = pk; p.style.transform = `translateY(${(1 - pk) * -30}px)`;
+  });
+  $("sub").style.opacity = ease((t - CONFIG.countEnd) / 0.4);
+};
+window.renderAt(0);
+</script>
+</body></html>

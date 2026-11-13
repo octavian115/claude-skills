@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+# never commit footage or renders
+*.mp4
+*.mov
+*.wav
+renders/
